@@ -15,7 +15,7 @@ void GaussianBlur_float(UnityTexture2D tex, UnityTexture2D controlTex, UnitySamp
  
             float2 offset = float2(tex.texelSize.x * x, tex.texelSize.y * y);
             //col += Texture.Sample(Sampler, UV + offset);
-            col += SAMPLE_TEXTURE2D_LOD(tex, tex.samplerstate, UV + offset, 0);
+            col += SAMPLE_TEXTURE2D_LOD(tex, tex.samplerstate, UV + offset, lod);
         }
     }
  

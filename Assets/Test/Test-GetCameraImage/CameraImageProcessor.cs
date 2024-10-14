@@ -4,6 +4,7 @@ using UnityEngine.XR.ARFoundation;
 
 public class CameraImageProcessor : MonoBehaviour
 {
+    [Header("Step0")]
     [SerializeField]
     ARCameraBackground m_ARCameraBackground;
 
@@ -11,25 +12,43 @@ public class CameraImageProcessor : MonoBehaviour
     RenderTexture m_RenderTexture;
 
     [SerializeField]
+    Texture m_TestTexture;
+
+    [Header("Step1")]
+    [SerializeField]
     Material m_CalculateMaskMaterial;
 
     [SerializeField]
     RenderTexture m_MaskTexture;
 
     [SerializeField]
+    Vector3 RGB;
+
+    [SerializeField]
+    Vector3 HSL;
+
+    [Header("Step2")]
+    [SerializeField]
+    Material m_BlurMaterial;
+    [SerializeField]
+    RenderTexture m_BlurredMaskTexture;
+
+    [Header("Step3")]
+    [SerializeField]
+    Material m_GenerateOffsetMaterial;
+    [SerializeField]
+    RenderTexture m_OffsetTexture;
+
+    [Header("Step10")]
+    [SerializeField]
     Material m_DistortionMaterial;
 
     [SerializeField]
     RenderTexture m_DistortionTexture;
 
-    [SerializeField]
-    Texture m_TestTexture;
+    
 
-    [SerializeField]
-    Vector3 RGB;
-
-    [SerializeField]
-    Vector3 HSL;
+    
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -40,6 +59,33 @@ public class CameraImageProcessor : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Step0 - Read CameraImage To RenderTexture
+        ReadCameraImageToRenderTexture();
+
+        // Step1 - Calculate Mask
+        m_CalculateMaskMaterial.SetTexture("_CameraImage", m_RenderTexture);
+        Graphics.Blit(m_RenderTexture, m_MaskTexture, m_CalculateMaskMaterial, 0);
+        HSL = Unity_ColorspaceConversion_RGB_RGB_float(RGB / 255.0f);
+
+        // Step2 - Blur Mask
+        m_BlurMaterial.SetTexture("_TextureIn", m_MaskTexture);
+        Graphics.Blit(m_MaskTexture, m_BlurredMaskTexture, m_BlurMaterial, 0);
+
+        // Step3 - Offset
+        m_GenerateOffsetMaterial.SetTexture("_HeightMap", m_BlurredMaskTexture);
+        Graphics.Blit(null, m_OffsetTexture, m_GenerateOffsetMaterial, 0);
+
+
+        // Step10 - Distortion 
+        m_DistortionMaterial.SetTexture("_CameraTexture", m_RenderTexture);
+        m_DistortionMaterial.SetTexture("_MaskTexture", m_BlurredMaskTexture);
+        Graphics.Blit(m_RenderTexture, m_DistortionTexture, m_DistortionMaterial, 0);
+
+        
+    }
+
+    void ReadCameraImageToRenderTexture()
+    {
         // Create a new command buffer
         var commandBuffer = new CommandBuffer();
         commandBuffer.name = "AR Camera Background Blit Pass";
@@ -47,7 +93,7 @@ public class CameraImageProcessor : MonoBehaviour
         //Debug.Log($"m_ARCameraBackground == null ? {m_ARCameraBackground == null}, m_ARCameraBackground.material == null ? { m_ARCameraBackground.material == null}");
 
         Texture texture;
-        if(m_ARCameraBackground == null || m_ARCameraBackground.material == null)
+        if (m_ARCameraBackground == null || m_ARCameraBackground.material == null)
         {
             texture = m_TestTexture;
         }
@@ -83,17 +129,6 @@ public class CameraImageProcessor : MonoBehaviour
 
         // Set Unity's render target back to its previous value
         Graphics.SetRenderTarget(colorBuffer, depthBuffer);
-
-        // Calculate Mask
-        m_CalculateMaskMaterial.SetTexture("_CameraImage", m_RenderTexture);
-        Graphics.Blit(m_RenderTexture, m_MaskTexture, m_CalculateMaskMaterial, 0);
-
-        // Distortion 
-        m_DistortionMaterial.SetTexture("_CameraTexture", m_RenderTexture);
-        m_DistortionMaterial.SetTexture("_MaskTexture", m_MaskTexture);
-        Graphics.Blit(m_RenderTexture, m_DistortionTexture, m_DistortionMaterial, 0);
-
-        HSL = Unity_ColorspaceConversion_RGB_RGB_float(RGB / 255.0f);
     }
 
     void ResizeTexture(RenderTexture src, int width, int height)
