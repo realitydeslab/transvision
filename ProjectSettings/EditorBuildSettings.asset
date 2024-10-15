@@ -5,11 +5,8 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/EchoVision.unity
-    guid: a6544fe1255dc417cad0f3264088272f
   - enabled: 1
-    path: Assets/Test/Test-GetCameraImage/Test-GetCameraImage.unity
+    path: Assets/Scenes/transvision.unity
     guid: 3d7e0de4a05e74cdcb9b0f62125bf4a6
   m_configObjects:
     UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 67d71b5c1ca18436c8d7fabeb3759e99,

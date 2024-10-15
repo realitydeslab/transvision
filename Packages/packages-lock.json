@@ -296,6 +296,12 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.xiaobo.xiaobo.unity.toolkit": {
+      "version": "file:xiaobo.unity.toolkit",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "io.holokit.unity-sdk": {
       "version": "file:io.holokit.unity-sdk",
       "depth": 0,
