@@ -640,6 +640,22 @@ MonoBehaviour:
   dirtIntensity:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-148483778326385413
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64b9ce00e9b2c4a9faebb75e5457540c, type: 3}
+  m_Name: NewPostProcessEffectVolumeComponent
+  m_EditorClassIdentifier: 
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -672,6 +688,7 @@ MonoBehaviour:
   - {fileID: -4987172143407116336}
   - {fileID: -2861187812428081365}
   - {fileID: -2420751171880937473}
+  - {fileID: -148483778326385413}
 --- !u!114 &326223402201369299
 MonoBehaviour:
   m_ObjectHideFlags: 3
