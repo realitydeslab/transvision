@@ -55,9 +55,11 @@ public class CameraImageProcessor : MonoBehaviour
     void Start()
     {
         HelperModule.Instance.SetSlider("Hue Threshold", (float v) => { m_CalculateMaskMaterial.SetFloat("_HueThreshold", v); }, m_CalculateMaskMaterial.GetFloat("_HueThreshold"), 0, 1);
+        HelperModule.Instance.SetSlider("Hue Threshold OneMinus", (float v) => { m_CalculateMaskMaterial.SetFloat("_HueThreshold_OneMinus", v); }, m_CalculateMaskMaterial.GetFloat("_HueThreshold_OneMinus"), 0, 1);
         HelperModule.Instance.SetSlider("Saturate Threshold", (float v) => { m_CalculateMaskMaterial.SetFloat("_SaturateThreshold", v); }, m_CalculateMaskMaterial.GetFloat("_SaturateThreshold"), 0, 1);
+        HelperModule.Instance.SetSlider("Value Threshold", (float v) => { m_CalculateMaskMaterial.SetFloat("_ValueThreshold", v); }, m_CalculateMaskMaterial.GetFloat("_ValueThreshold"), 0, 1);
 
-        HelperModule.Instance.SetSlider("Blur", (float v) => { m_BlurMaterial.SetFloat("_Blur", v); }, m_BlurMaterial.GetFloat("_Blur"), 0, 40);
+        HelperModule.Instance.SetSlider("Blur", (float v) => { m_BlurMaterial.SetFloat("_Blur", v); }, m_BlurMaterial.GetFloat("_Blur"), 0, 50);
         HelperModule.Instance.SetSlider("LOD", (float v)=> { m_BlurMaterial.SetFloat("_LOD", v); }, m_BlurMaterial.GetFloat("_LOD"), 0, 20);
 
         HelperModule.Instance.SetSlider("Normal Strength", (float v) => { m_GenerateOffsetMaterial.SetFloat("_NormalStrength", v); }, m_GenerateOffsetMaterial.GetFloat("_NormalStrength"), 0, 40);

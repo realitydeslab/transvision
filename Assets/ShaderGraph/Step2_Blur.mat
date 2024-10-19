@@ -56,7 +56,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Blur: 40
-    - _LOD: 3
+    - _LOD: 4
     - _QueueControl: 0
     - _QueueOffset: 0
     m_Colors: []

@@ -70,7 +70,7 @@ Material:
     - _Blur: 20
     - _DistortionStrength: 0.06
     - _FlowmapSpeed: 0.28
-    - _FlowmapStrength: 0.1
+    - _FlowmapStrength: 0.22
     - _FlowmapTiling: 3.77
     - _NormalStrength: -0.35
     - _OffsetStrength: -0.07

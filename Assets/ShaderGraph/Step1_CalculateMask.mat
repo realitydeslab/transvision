@@ -60,14 +60,15 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _HueThreshold: 0.12310344
+    - _HueThreshold: 0.07
+    - _HueThreshold_OneMinus: 0.9
     - _QueueControl: 0
     - _QueueOffset: 0
     - _RedThreshold: 0.16
     - _SaturateThreshold: 0.9
     - _Strength: 0
     - _TwirlStrength: 0.27
-    - _ValueThreshold: 0
+    - _ValueThreshold: 0.3
     - _ValueThreshold_1: 0
     - _VoronoiDensity: -15
     - _VoronoiSpeed: 6.28
