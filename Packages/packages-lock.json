@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.unity.burst": {
-      "version": "1.8.17",
+      "version": "1.8.18",
       "depth": 2,
       "source": "registry",
       "dependencies": {
@@ -11,19 +11,19 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collab-proxy": {
-      "version": "2.5.1",
+      "version": "2.6.0",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.collections": {
-      "version": "2.4.3",
+      "version": "2.5.1",
       "depth": 2,
       "source": "registry",
       "dependencies": {
-        "com.unity.burst": "1.8.13",
-        "com.unity.test-framework": "1.4.3",
+        "com.unity.burst": "1.8.17",
+        "com.unity.test-framework": "1.4.5",
         "com.unity.nuget.mono-cecil": "1.11.4",
         "com.unity.test-framework.performance": "3.0.3"
       },
@@ -76,7 +76,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.inputsystem": {
-      "version": "1.11.0",
+      "version": "1.11.2",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -92,7 +92,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.memoryprofiler": {
-      "version": "1.1.0",
+      "version": "1.1.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -218,7 +218,7 @@
       }
     },
     "com.unity.visualscripting": {
-      "version": "1.9.4",
+      "version": "1.9.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -266,7 +266,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.core-utils": {
-      "version": "2.3.0",
+      "version": "2.4.0",
       "depth": 1,
       "source": "registry",
       "dependencies": {
@@ -275,7 +275,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.legacyinputhelpers": {
-      "version": "2.1.10",
+      "version": "2.1.11",
       "depth": 2,
       "source": "registry",
       "dependencies": {
@@ -295,12 +295,6 @@
         "com.unity.xr.legacyinputhelpers": "2.1.7"
       },
       "url": "https://packages.unity.com"
-    },
-    "com.xiaobo.xiaobo.unity.toolkit": {
-      "version": "file:xiaobo.unity.toolkit",
-      "depth": 0,
-      "source": "embedded",
-      "dependencies": {}
     },
     "io.holokit.unity-sdk": {
       "version": "file:io.holokit.unity-sdk",

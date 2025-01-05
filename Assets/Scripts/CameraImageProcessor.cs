@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.XR.ARFoundation;
-using Xiaobo.UnityToolkit.Helper;
 
 public class CameraImageProcessor : MonoBehaviour
 {
@@ -54,21 +53,6 @@ public class CameraImageProcessor : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        HelperModule.Instance.SetSlider("Hue Threshold", (float v) => { m_CalculateMaskMaterial.SetFloat("_HueThreshold", v); }, m_CalculateMaskMaterial.GetFloat("_HueThreshold"), 0, 1);
-        HelperModule.Instance.SetSlider("Hue Threshold OneMinus", (float v) => { m_CalculateMaskMaterial.SetFloat("_HueThreshold_OneMinus", v); }, m_CalculateMaskMaterial.GetFloat("_HueThreshold_OneMinus"), 0, 1);
-        HelperModule.Instance.SetSlider("Saturate Threshold", (float v) => { m_CalculateMaskMaterial.SetFloat("_SaturateThreshold", v); }, m_CalculateMaskMaterial.GetFloat("_SaturateThreshold"), 0, 1);
-        HelperModule.Instance.SetSlider("Value Threshold", (float v) => { m_CalculateMaskMaterial.SetFloat("_ValueThreshold", v); }, m_CalculateMaskMaterial.GetFloat("_ValueThreshold"), 0, 1);
-
-        HelperModule.Instance.SetSlider("Blur", (float v) => { m_BlurMaterial.SetFloat("_Blur", v); }, m_BlurMaterial.GetFloat("_Blur"), 0, 50);
-        HelperModule.Instance.SetSlider("LOD", (float v)=> { m_BlurMaterial.SetFloat("_LOD", v); }, m_BlurMaterial.GetFloat("_LOD"), 0, 20);
-
-        HelperModule.Instance.SetSlider("Normal Strength", (float v) => { m_GenerateOffsetMaterial.SetFloat("_NormalStrength", v); }, m_GenerateOffsetMaterial.GetFloat("_NormalStrength"), 0, 40);
-        HelperModule.Instance.SetSlider("Constant Flow Speed", (float v) => { m_GenerateOffsetMaterial.SetFloat("_ConstantFlowMapSpeed", v); }, m_GenerateOffsetMaterial.GetFloat("_ConstantFlowMapSpeed"), 0, 1);
-        HelperModule.Instance.SetSlider("Constant Flow Strength", (float v) => { m_GenerateOffsetMaterial.SetFloat("_ConstantFlowMapStrength", v); }, m_GenerateOffsetMaterial.GetFloat("_ConstantFlowMapStrength"), -1, 1);
-
-        HelperModule.Instance.SetSlider("FlowMap Speed", (float v) => { m_DistortionMaterial.SetFloat("_FlowmapSpeed", v); }, m_DistortionMaterial.GetFloat("_FlowmapSpeed"), 0, 1);
-        HelperModule.Instance.SetSlider("FlowMap Strength", (float v) => { m_DistortionMaterial.SetFloat("_FlowmapStrength", v); }, m_DistortionMaterial.GetFloat("_FlowmapStrength"), -1, 1);
-
         
     }
 

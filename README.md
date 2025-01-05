@@ -19,19 +19,22 @@ Our visual field is packed with so much information that our perception has beco
 
 ## Implementation
 TransVision is an AR mobile application where we implemented Hyperallergenic Vision for expanding red zone. 
+<div>
+<img src="Documentation~/images/preview.avif" width="480" />
+</div>
 
 ## Requirement
 iPhone 12 or above. 
 
 ## How to play
-You can download the app from app store by searching "EchoVision". 
+You can download the app from app store by searching "TransVision". 
 - Mono Mode<br>
-  In this mode, users can interactive with EchoVision without HoloKit.
+  In this mode, users can interactive with TransVision without HoloKit.
 - Stereo Mode<br>
   In this mode, user can get a more immersive AR experience with HoloKit.
 
 ## How to run
-- Unity Version: 6000.0
+- Unity Version: 6000.0 or above
 - Change build target to iOS in `Project Setting/Player settings`
 - Enable "Requires ARKit Support" in `Project Setting/Player settings`
 - Enable "Apple ARKit" in `Project Setting/XR Plug-in Management`
