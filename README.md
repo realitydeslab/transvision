@@ -24,7 +24,7 @@ TransVision is an AR mobile application where we implemented Hyperallergenic Vis
 </div>
 
 ## Requirement
-iPhone 12 or above. 
+iPhone 12 or above, iOS 27 or later.
 
 ## How to play
 You can download the app from app store by searching "TransVision". 
@@ -34,9 +34,24 @@ You can download the app from app store by searching "TransVision".
   In this mode, user can get a more immersive AR experience with HoloKit.
 
 ## How to run
-- Unity Version: 6000.0 or above
+- Unity Version: 6000.3 (Unity 6.3 LTS), Universal Render Pipeline 17.3
+- HoloKit Unity SDK 0.6.0, from the [holokit-unity-sdk](https://github.com/holokit/holokit-unity-sdk) tag `0.6.0-preview.1` (see `Packages/manifest.json`)
+- Open `Packages/org.realitydeslab.transvision/Scenes/transvision.unity`
 - Change build target to iOS in `Project Setting/Player settings`
 - Enable "Requires ARKit Support" in `Project Setting/Player settings`
 - Enable "Apple ARKit" in `Project Setting/XR Plug-in Management`
+
+## Project layout
+- `Packages/org.realitydeslab.transvision`: the app (scripts in `Runtime/`, scene, shader graphs, materials, tests)
+- `Assets`: project configuration only (URP assets, XR settings, TextMesh Pro)
+
+## Release notes
+See [`Packages/org.realitydeslab.transvision/CHANGELOG.md`](Packages/org.realitydeslab.transvision/CHANGELOG.md).
+
+## Tests
+EditMode tests live in `Packages/org.realitydeslab.transvision/Tests/Editor`. Run them from Window > General > Test Runner, or headless:
+```
+unity test . --mode EditMode
+```
 
 
