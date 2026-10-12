@@ -48,6 +48,7 @@ obj/
 *.suo
 /*.sln
 *.sln
+*.slnx
 *.user
 *.unityproj
 *.ipch
