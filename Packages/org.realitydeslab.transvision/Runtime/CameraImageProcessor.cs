@@ -1,8 +1,14 @@
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.XR.ARFoundation;
 
-public class CameraImageProcessor : MonoBehaviour
+/// <summary>
+/// The red-expansion effect: camera image, red mask, blurred mask, offset map, distortion, written
+/// to <see cref="m_DistortionTexture"/> for the result plane. The steps run inside URP as one
+/// Render Graph pass (<see cref="EffectPass"/>), once per frame.
+/// </summary>
+public partial class CameraImageProcessor : MonoBehaviour
 {
     [Header("Step0")]
     [SerializeField]
@@ -46,109 +52,138 @@ public class CameraImageProcessor : MonoBehaviour
     [SerializeField]
     RenderTexture m_DistortionTexture;
 
-    
+    static readonly int s_UnityDisplayTransform = Shader.PropertyToID("_UnityDisplayTransform");
+    static readonly int s_DisplayTransform = Shader.PropertyToID("_TransVisionDisplayTransform");
 
-    
+    EffectPass m_Pass;
+    DisplayPass m_DisplayPass;
+    int m_LastRenderedFrame = -1;
+    ARCameraManager m_CameraManager;
+    Material m_CameraImageMaterial;
+    Matrix4x4? m_FrameDisplayMatrix;
+    bool m_HasCameraFrame;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    void OnEnable()
     {
-        
+        m_Pass ??= new EffectPass(this);
+        m_DisplayPass ??= new DisplayPass(this);
+        if (m_CameraImageMaterial == null)
+            m_CameraImageMaterial = new Material(Resources.Load<Shader>("TransVisionCameraImage"));
+        // Frames arrive in Stereo too, where the HoloKit SDK turns the AR camera background off.
+        m_CameraManager = m_ARCameraBackground != null ? m_ARCameraBackground.GetComponent<ARCameraManager>() : null;
+        if (m_CameraManager != null)
+            m_CameraManager.frameReceived += OnCameraFrameReceived;
+        RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
     }
 
-    // Update is called once per frame
-    void Update()
+    void OnDisable()
     {
-        // Step0 - Read CameraImage To RenderTexture
-        ReadCameraImageToRenderTexture();
-
-        // Step1 - Calculate Mask
-        m_CalculateMaskMaterial.SetTexture("_CameraImage", m_RenderTexture);
-        Graphics.Blit(m_RenderTexture, m_MaskTexture, m_CalculateMaskMaterial, 0);
-        HSL = Unity_ColorspaceConversion_RGB_RGB_float(RGB / 255.0f);
-
-        // Step2 - Blur Mask
-        m_BlurMaterial.SetTexture("_TextureIn", m_MaskTexture);
-        Graphics.Blit(m_MaskTexture, m_BlurredMaskTexture, m_BlurMaterial, 0);
-
-        // Step3 - Offset
-        m_GenerateOffsetMaterial.SetTexture("_HeightMap", m_BlurredMaskTexture);
-        Graphics.Blit(null, m_OffsetTexture, m_GenerateOffsetMaterial, 0);
-
-
-        // Step10 - Distortion 
-        m_DistortionMaterial.SetTexture("_CameraTexture", m_RenderTexture);
-        m_DistortionMaterial.SetTexture("_MaskTexture", m_BlurredMaskTexture);
-        Graphics.Blit(m_RenderTexture, m_DistortionTexture, m_DistortionMaterial, 0);
-
-        
+        if (m_CameraManager != null)
+            m_CameraManager.frameReceived -= OnCameraFrameReceived;
+        RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
     }
 
-    void ReadCameraImageToRenderTexture()
+    void OnDestroy()
     {
-        // Create a new command buffer
-        var commandBuffer = new CommandBuffer();
-        commandBuffer.name = "AR Camera Background Blit Pass";
+        m_Pass?.Dispose();
+        m_DisplayPass?.Dispose();
+        m_Liquid?.Dispose();
+        m_Liquid = null;
+        if (m_CameraImageMaterial != null)
+            CoreUtils.Destroy(m_CameraImageMaterial);
+    }
 
-        //Debug.Log($"m_ARCameraBackground == null ? {m_ARCameraBackground == null}, m_ARCameraBackground.material == null ? { m_ARCameraBackground.material == null}");
+    void OnCameraFrameReceived(ARCameraFrameEventArgs args)
+    {
+        for (int i = 0; i < args.textures.Count; i++)
+            m_CameraImageMaterial.SetTexture(args.propertyNameIds[i], args.textures[i]);
+        m_FrameDisplayMatrix = args.displayMatrix;
+        m_HasCameraFrame = args.textures.Count > 0;
+    }
 
-        Texture texture;
-        if (m_ARCameraBackground == null || m_ARCameraBackground.material == null)
+    /// <summary>
+    /// Takes the display transform from the AR background material when it has one, just before
+    /// rendering. On iOS 27 the HoloKit SDK replaces that material and corrects its transform every
+    /// frame after AR Foundation wrote the frame's own (wrong) one into it, so it must be read after
+    /// the correction, not when the frame arrives. Without one, the frame's transform.
+    /// </summary>
+    void UpdateDisplayTransform()
+    {
+        var background = m_ARCameraBackground != null ? m_ARCameraBackground.material : null;
+        // HasMatrix, not HasProperty: the matrix is not in the shader's Properties block. Reading one the
+        // material lacks logs an error, so check first.
+        var matrix = background != null && background.HasMatrix(s_UnityDisplayTransform)
+            ? background.GetMatrix(s_UnityDisplayTransform) : Matrix4x4.zero;
+        if (matrix == Matrix4x4.zero || matrix == Matrix4x4.identity)
+            matrix = m_FrameDisplayMatrix ?? Matrix4x4.identity;
+        if (WholeCameraImage)
         {
-            texture = m_TestTexture;
+            matrix = WholeImageTransform(matrix, out var crop);
+            ScreenCrop = crop;
         }
         else
-        {
-            // Get a reference to the AR Camera Background's main texture
-            // We will copy this texture into our chosen render texture
-            texture = !m_ARCameraBackground.material.HasProperty("_MainTex") ?
-                null : m_ARCameraBackground.material.GetTexture("_MainTex");
-        }
-
-        // Resize Texture if not match with camera resolution
-        //ResizeTexture(m_RenderTexture, texture.width, texture.height);
-
-        // Save references to the active render target before we overwrite it
-        var colorBuffer = Graphics.activeColorBuffer;
-        var depthBuffer = Graphics.activeDepthBuffer;
-
-        // Set Unity's render target to our render texture
-        Graphics.SetRenderTarget(m_RenderTexture);
-
-        // Clear the render target before we render new pixels into it
-        commandBuffer.ClearRenderTarget(true, false, Color.clear);
-
-        // Blit the AR Camera Background into the render target
-        commandBuffer.Blit(
-            texture,
-            BuiltinRenderTextureType.CurrentActive,
-            m_ARCameraBackground.material);
-
-        // Execute the command buffer
-        Graphics.ExecuteCommandBuffer(commandBuffer);
-
-        // Set Unity's render target back to its previous value
-        Graphics.SetRenderTarget(colorBuffer, depthBuffer);
+            ScreenCrop = Vector2.one;
+        m_CameraImageMaterial.SetMatrix(s_DisplayTransform, matrix);
     }
 
-    void ResizeTexture(RenderTexture src, int width, int height)
+    /// <summary>
+    /// Stereo: the picture is the camera's whole image, not the part the screen shows. The screen
+    /// keeps the sensor's full width but only 61.5% of its height (2.17:1 of a 4:3 sensor, 34.5 of
+    /// 53.6 degrees), less than HoloKit X's eyes see (41 degrees).
+    /// </summary>
+    public bool WholeCameraImage { get; set; }
+
+    /// <summary>
+    /// The part of the picture the screen's view covers, per screen axis: (1, 1) when the picture is
+    /// the screen's view; with <see cref="WholeCameraImage"/>, (1, 0.615) on iPhone 15 Pro. The
+    /// screen's view is picture uv = screen uv * ScreenCrop + (1 - ScreenCrop) / 2.
+    /// </summary>
+    public Vector2 ScreenCrop { get; private set; } = Vector2.one;
+
+    /// <summary>
+    /// The display transform for the camera's whole image: <paramref name="screen"/> (screen uv to
+    /// camera image uv, row vector as ARKit's shader) without its crop, same orientation and centre.
+    /// <paramref name="crop"/> is the length of each screen axis in the image, the crop removed.
+    /// </summary>
+    public static Matrix4x4 WholeImageTransform(Matrix4x4 screen, out Vector2 crop)
     {
-        if(src.width != width || src.height != height)
-        {
-            Debug.Log($"[{this.GetType().Name}]: Resize from ({src.width},{src.height} to ({ width},{height} ))");
-            m_RenderTexture = new RenderTexture(width, height, 16, RenderTextureFormat.ARGB32);
-        }
+        crop = new Vector2(new Vector2(screen.m00, screen.m01).magnitude, new Vector2(screen.m10, screen.m11).magnitude);
+        var whole = screen;
+        whole.m00 /= crop.x;
+        whole.m01 /= crop.x;
+        whole.m10 /= crop.y;
+        whole.m11 /= crop.y;
+        Vector2 centre = ImageUv(screen, new Vector2(0.5f, 0.5f)) - ImageUv(whole, new Vector2(0.5f, 0.5f));
+        whole.m20 += centre.x;
+        whole.m21 += centre.y;
+        return whole;
     }
 
-    Vector3 Unity_ColorspaceConversion_RGB_RGB_float(Vector3 In)
+    /// Camera image uv for screen uv <paramref name="uv"/>, as the shaders compute it.
+    public static Vector2 ImageUv(Matrix4x4 display, Vector2 uv) =>
+        new(uv.x * display.m00 + uv.y * display.m10 + display.m20 + display.m30,
+            uv.x * display.m01 + uv.y * display.m11 + display.m21 + display.m31);
+
+    void Update()
     {
-        Vector3 Out;
-        Vector4 K = new Vector4(0.0f, -1.0f / 3.0f, 2.0f / 3.0f, -1.0f);
-        Vector4 P = Vector4.Lerp(new Vector4(In.z, In.y, K.w, K.z), new Vector4(In.y, In.z, K.x, K.y), In.y >= In.z ? 1 : 0);
-        Vector4 Q = Vector4.Lerp(new Vector4(P.x, P.y, P.w, In.x), new Vector4(In.x, P.y, P.z, P.x), In.x >= P.x ? 1 : 0);
-        float D = Q.x - Mathf.Min(Q.w, Q.y);
-        float E = Mathf.Epsilon;
-        Out = new Vector3(Mathf.Abs(Q.z + (Q.w - Q.y) / (6.0f * D + E)), D / (Q.x + E), Q.x);
-        return Out;
+        HSL = Utilities.RgbToHsv(RGB / 255.0f);
+    }
+
+    // The first game camera of each frame runs the effect, so Stereo's two eyes do not compute it twice.
+    // The Mono (AR) camera then draws the result full screen; Stereo's eyes show it on the result plane.
+    void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera)
+    {
+        if (camera.cameraType != CameraType.Game)
+            return;
+        if (!camera.TryGetComponent<UniversalAdditionalCameraData>(out var cameraData) || cameraData.scriptableRenderer == null)
+            return;
+        if (Time.frameCount != m_LastRenderedFrame)
+        {
+            m_LastRenderedFrame = Time.frameCount;
+            UpdateDisplayTransform();
+            cameraData.scriptableRenderer.EnqueuePass(m_Pass);
+        }
+        if (m_ARCameraBackground != null && camera.gameObject == m_ARCameraBackground.gameObject)
+            cameraData.scriptableRenderer.EnqueuePass(m_DisplayPass);
     }
 }
