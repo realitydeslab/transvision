@@ -23,13 +23,9 @@ using UnityEngine.Rendering.Universal;
 [VolumeComponentMenu("Post-processing Custom/NewPostProcessEffect")]
 [VolumeRequiresRendererFeatures(typeof(NewPostProcessEffectRendererFeature))]
 [SupportedOnRenderPipeline(typeof(UniversalRenderPipelineAsset))]
+[DisplayInfo(name = "NewPostProcessEffect")]
 public sealed class NewPostProcessEffectVolumeComponent : VolumeComponent, IPostProcessComponent
 {
-    public NewPostProcessEffectVolumeComponent()
-    {
-        displayName = "NewPostProcessEffect";
-    }
-
     [Tooltip("Enter the description for the property that is shown when hovered")]
     public ClampedFloatParameter intensity = new ClampedFloatParameter(1f, 0f, 1f);
 

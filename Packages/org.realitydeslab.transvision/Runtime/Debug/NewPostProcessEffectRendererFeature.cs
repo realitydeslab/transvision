@@ -9,6 +9,9 @@ using UnityEngine.Rendering.Universal;
 //
 // For a general guide on how to create custom ScriptableRendererFeatures see the following URP documentation page:
 // https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@latest/index.html?subfolder=/manual/renderer-features/create-custom-renderer-feature.html
+//
+// Unity 6.3 (URP 17.3) compiles the Compatibility Mode API (Execute, OnCameraSetup) only with URP_COMPATIBILITY_MODE,
+// so this feature implements the Render Graph path alone.
 public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeature
 {
     #region FEATURE_FIELDS
@@ -43,7 +46,7 @@ public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeat
         if (m_Material == null)
         {
             //m_Material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Packages/com.unity.render-pipelines.universal/Runtime/Materials/FullscreenInvertColors.mat");
-            m_Material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Debug/FullScreenShaderTest.mat");
+            m_Material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Packages/org.realitydeslab.transvision/Debug/FullScreenShaderTest.mat");
             
         }
             
@@ -106,12 +109,6 @@ public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeat
         renderer.EnqueuePass(m_FullScreenPass);
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        // We dispose the pass we created to free the resources it might be holding onto
-        m_FullScreenPass.Dispose();
-    }
-
     #endregion
 
     private class CustomPostRenderPass : ScriptableRenderPass
@@ -120,9 +117,6 @@ public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeat
 
         // The material used to render the post-processing effect
         private Material m_Material;
-
-        // The handle to the temporary color copy texture (only used in the non-render graph path)
-        private RTHandle m_CopiedColor;
 
         // The property block used to set additional properties for the material
         private static MaterialPropertyBlock s_SharedPropertyBlock = new MaterialPropertyBlock();
@@ -153,13 +147,7 @@ public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeat
 
         #region PASS_SHARED_RENDERING_CODE
 
-        // This method contains the shared rendering logic for doing the temporary color copy pass (used by both the non-render graph and render graph paths)
-        private static void ExecuteCopyColorPass(RasterCommandBuffer cmd, RTHandle sourceTexture)
-        {
-            Blitter.BlitTexture(cmd, sourceTexture, new Vector4(1, 1, 0, 0), 0.0f, false);
-        }
-
-        // This method contains the shared rendering logic for doing the main post-processing pass (used by both the non-render graph and render graph paths)
+        // This method contains the rendering logic for the main post-processing pass
         private static void ExecuteMainPass(RasterCommandBuffer cmd, RTHandle sourceTexture, Material material)
         {
             s_SharedPropertyBlock.Clear();
@@ -180,94 +168,9 @@ public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeat
             cmd.DrawProcedural(Matrix4x4.identity, material, 0, MeshTopology.Triangles, 3, 1, s_SharedPropertyBlock);
         }
 
-        // This method is used to get the descriptor used for creating the temporary color copy texture that will enable the main pass to sample the screen color
-        private static RenderTextureDescriptor GetCopyPassTextureDescriptor(RenderTextureDescriptor desc)
-        {
-            // Unless 'desc.bindMS = true' for an MSAA texture a resolve pass will be inserted before it is bound for sampling.
-            // Since our main pass shader does not expect to sample an MSAA target we will leave 'bindMS = false'.
-            // If the camera target has MSAA enabled an MSAA resolve will still happen before our copy-color pass but
-            // with this change we will avoid an unnecessary MSAA resolve before our main pass.
-            desc.msaaSamples = 1;
-
-            // This avoids copying the depth buffer tied to the current descriptor as the main pass in this example does not use it
-            desc.depthBufferBits = (int)DepthBits.None;
-
-            return desc;
-        }
-
-        #endregion
-
-        #region PASS_NON_RENDER_GRAPH_PATH
-
-        // This method is called before executing the render pass (non-render graph path only).
-        // It can be used to configure render targets and their clear state. Also to create temporary render target textures.
-        // When empty this render pass will render to the active camera render target.
-        // You should never call CommandBuffer.SetRenderTarget. Instead call <c>ConfigureTarget</c> and <c>ConfigureClear</c>.
-        // The render pipeline will ensure target setup and clearing happens in a performant manner.
-        [System.Obsolete("This rendering path is for compatibility mode only (when Render Graph is disabled). Use Render Graph API instead.", false)]
-        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
-        {
-            // This ScriptableRenderPass manages its own RenderTarget.
-            // ResetTarget here so that ScriptableRenderer's active attachment can be invalidated when processing this ScriptableRenderPass.
-            ResetTarget();
-
-            // This allocates our intermediate texture for the non-RG path and makes sure it's reallocated if some settings on the camera target change (e.g. resolution)
-            if (kSampleActiveColor)
-                RenderingUtils.ReAllocateHandleIfNeeded(ref m_CopiedColor, GetCopyPassTextureDescriptor(renderingData.cameraData.cameraTargetDescriptor), name: "_CustomPostPassCopyColor");
-        }
-
-        // Here you can implement the rendering logic (non-render graph path only).
-        // Use <c>ScriptableRenderContext</c> to issue drawing commands or execute command buffers
-        // https://docs.unity3d.com/ScriptReference/Rendering.ScriptableRenderContext.html
-        // You don't have to call ScriptableRenderContext.submit, the render pipeline will call it at specific points in the pipeline.
-        [System.Obsolete("This rendering path is for compatibility mode only (when Render Graph is disabled). Use Render Graph API instead.", false)]
-        public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
-        {
-            ref var cameraData = ref renderingData.cameraData;
-            var cmd = CommandBufferPool.Get();
-
-            using (new ProfilingScope(cmd, profilingSampler))
-            {
-                RasterCommandBuffer rasterCmd = CommandBufferHelpers.GetRasterCommandBuffer(cmd);
-                if (kSampleActiveColor)
-                {
-                    CoreUtils.SetRenderTarget(cmd, m_CopiedColor);
-                    ExecuteCopyColorPass(rasterCmd, cameraData.renderer.cameraColorTargetHandle);
-                }
-
-                if(kBindDepthStencilAttachment)
-                    CoreUtils.SetRenderTarget(cmd, cameraData.renderer.cameraColorTargetHandle, cameraData.renderer.cameraDepthTargetHandle);
-                else
-                    CoreUtils.SetRenderTarget(cmd, cameraData.renderer.cameraColorTargetHandle);
-
-                ExecuteMainPass(rasterCmd, kSampleActiveColor ? m_CopiedColor : null, m_Material);
-            }
-
-            context.ExecuteCommandBuffer(cmd);
-            cmd.Clear();
-
-            CommandBufferPool.Release(cmd);
-        }
-
-        // Cleanup any allocated resources that were created during the execution of this render pass (non-render graph path only)
-        public override void OnCameraCleanup(CommandBuffer cmd)
-        {
-        }
-
-        public void Dispose()
-        {
-            m_CopiedColor?.Release();
-        }
-
         #endregion
 
         #region PASS_RENDER_GRAPH_PATH
-
-        // The custom copy color pass data that will be passed at render graph execution to the lambda we set with "SetRenderFunc" during render graph setup
-        private class CopyPassData
-        {
-            public TextureHandle inputTexture;
-        }
 
         // The custom main pass data that will be passed at render graph execution to the lambda we set with "SetRenderFunc" during render graph setup
         private class MainPassData
@@ -276,18 +179,13 @@ public sealed class NewPostProcessEffectRendererFeature : ScriptableRendererFeat
             public TextureHandle inputTexture;
         }
 
-        private static void ExecuteCopyColorPass(CopyPassData data, RasterGraphContext context)
-        {
-            ExecuteCopyColorPass(context.cmd, data.inputTexture);
-        }
-
         private static void ExecuteMainPass(MainPassData data, RasterGraphContext context)
         {
             ExecuteMainPass(context.cmd, data.inputTexture.IsValid() ? data.inputTexture : null, data.material);
         }
 
         // Here you can implement the rendering logic for the render graph path
-        // The implementation diverges from the non-rendergraph path because we don't need a copy here when sampling the active color. However, this means that every pixel needs to be written in your material, a partial write (eg using stencil) will not be visually correct and requires a copy first.
+        // No copy is needed to sample the active color: cameraColor is swapped to a new texture below. However, this means that every pixel needs to be written in your material, a partial write (eg using stencil) will not be visually correct and requires a copy first.
         public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
         {
             UniversalResourceData resourcesData = frameData.Get<UniversalResourceData>();
