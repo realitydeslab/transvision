@@ -1,0 +1,19 @@
+{
+  "name": "org.realitydeslab.transvision",
+  "displayName": "TransVision",
+  "version": "0.1.0",
+  "unity": "6000.3",
+  "description": "TransVision (Hyperallergenic Vision) is an AR art piece that makes the wearer allergic to the color red: red regions of the camera image expand (nocebo) or shrink (placebo). Built on the HoloKit Unity SDK for iPhone, in Mono (screen AR) and HoloKit Stereo.\n\nContains the app's scripts, scene, shader graphs, materials and tests.",
+  "author": {
+    "name": "Reality Design Lab",
+    "url": "https://reality.design"
+  },
+  "dependencies": {
+    "io.holokit.unity-sdk": "0.6.0",
+    "com.unity.xr.arfoundation": "6.4.3",
+    "com.unity.xr.management": "4.6.1",
+    "com.unity.render-pipelines.universal": "17.3.0",
+    "com.unity.ugui": "2.0.0",
+    "com.unity.modules.animation": "1.0.0"
+  }
+}
